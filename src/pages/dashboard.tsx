@@ -70,12 +70,13 @@ export default function Dashboard() {
         my="6"
         maxW={1480}
         mx="auto"
-        px="6">
+        px="6"
+      >
         <Sidebar />
 
         <SimpleGrid flex="1" gap="4" minChildWidth="320px">
           <Box
-            p={["6","8"]}
+            p={["6", "8"]}
             bg="gray.800"
             borderRadius={8}
           >
