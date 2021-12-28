@@ -1,49 +1,83 @@
-import { Box, Button, Divider, Flex, HStack, SimpleGrid, VStack } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Divider,
+  Flex,
+  HStack,
+  SimpleGrid,
+  VStack,
+} from "@chakra-ui/react";
 import { SubmitHandler, useForm } from "react-hook-form";
-import * as yup from "yup"
+import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Input } from "../../components/Form/Input";
 import { Header } from "../../components/Header";
 import { Sidebar } from "../../components/Sidebar";
-import { HeadingComponent } from "../../components/Heading"
+import { HeadingComponent } from "../../components/Heading";
 import Link from "next/link";
+import { useMutation } from "react-query";
+import { api } from "../../services/api";
+import { queryClient } from "../../services/QueryClient";
+import { useRouter } from "next/router";
 
 type CreateUserFormData = {
   email: string;
   nome: string;
   password: string;
   password_confirmation: string;
-}
+};
 
 export default function CreateUser() {
+  const router = useRouter();
+
+  const createUser = useMutation(
+    async (user: CreateUserFormData) => {
+      const response = await api.post("users", {
+        user: {
+          ...user,
+          created_at: new Date(),
+        },
+      });
+      
+      return response.data.user;
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries("users");
+      },
+    }
+  );
 
   const createUserFormSchema = yup.object().shape({
     name: yup.string().required("Nome obrigatório"),
     email: yup.string().required("E-mail obrigatório").email("E-mail inválido"),
-    password: yup.string().required("Senha obrigatória").min(6, "Senha precisa de, no mínimo, 6 caracteres"),
-    password_confirmation: yup.string().oneOf([null, yup.ref("password")], "As senhas devem ser iguais")
-  })
+    password: yup
+      .string()
+      .required("Senha obrigatória")
+      .min(6, "Senha precisa de, no mínimo, 6 caracteres"),
+    password_confirmation: yup
+      .string()
+      .oneOf([null, yup.ref("password")], "As senhas devem ser iguais"),
+  });
 
   const { register, handleSubmit, formState } = useForm({
-    resolver: yupResolver(createUserFormSchema)
-  })
+    resolver: yupResolver(createUserFormSchema),
+  });
 
-  const { errors } = formState
+  const { errors } = formState;
 
-  const handleUserCreation: SubmitHandler<CreateUserFormData> = (data) => {
-    console.log(data);
-  }
+  const handleUserCreation: SubmitHandler<CreateUserFormData> = async (
+    data
+  ) => {
+    await createUser.mutateAsync(data);
+
+    router.push("/users");
+  };
 
   return (
     <Box>
       <Header />
-      <Flex
-        w="100%"
-        my="6"
-        maxW={1480}
-        mx="auto"
-        px="6"
-      >
+      <Flex w="100%" my="6" maxW={1480} mx="auto" px="6">
         <Sidebar />
         <Box
           as="form"
@@ -92,18 +126,21 @@ export default function CreateUser() {
           <Flex mt="8" justify="flex-end">
             <HStack spacing="4">
               <Link href="/users" passHref>
-                <Button as="a" colorScheme="whiteAlpha">Cancelar</Button>
+                <Button as="a" colorScheme="whiteAlpha">
+                  Cancelar
+                </Button>
               </Link>
               <Button
                 isLoading={formState.isSubmitting}
                 type="submit"
                 colorScheme="pink"
-              >Salvar
+              >
+                Salvar
               </Button>
             </HStack>
           </Flex>
         </Box>
-      </Flex >
-    </Box >
-  )
+      </Flex>
+    </Box>
+  );
 }
